@@ -45,7 +45,7 @@ class TableGenerator(object):
         elif ctype == ColummDataType.INT:
             return NumberFormatter()
         elif ctype == ColummDataType.DATETIME:
-            return DateFormatter(format="%c")
+            return DateFormatter(format="%w, %Y-%m-%d")
         elif ctype == ColummDataType.STRING:
             return StringFormatter()
         elif ctype == ColummDataType.PERCENTAGE:

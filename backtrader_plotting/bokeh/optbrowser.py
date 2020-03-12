@@ -106,7 +106,7 @@ class OptBrowser:
         return model
 
     @staticmethod
-    def _run_server(fnc_make_document, iplot=True, notebook_url="localhost:8889", port=80, ioloop=None):
+    def _run_server(fnc_make_document, iplot=True, notebook_url="localhost:8889", port=8080, ioloop=None):
         """Runs a Bokeh webserver application. Documents will be created using fnc_make_document"""
         handler = FunctionHandler(fnc_make_document)
         app = Application(handler)
@@ -115,6 +115,6 @@ class OptBrowser:
         else:
             apps = {'/': app}
 
-            print("Open your browser here: http://localhost")
+            print("Open your browser here: http://localhost:%d"%port)
             server = Server(apps, port=port, io_loop=ioloop)
             server.run_until_shutdown()
