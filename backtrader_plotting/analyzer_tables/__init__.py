@@ -1,4 +1,5 @@
 import backtrader
+import backtrader_contrib as backtrader
 import logging
 from .drawdown import datatable as drawdown
 from .sharperatio import datatable as sharperatio
