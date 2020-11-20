@@ -146,5 +146,5 @@ def datatable(self):
 
         tables.append(tab_len)
 
-    return "Trade Analyzer", tables
+    return "Transaction Analyzer", tables
 

@@ -33,10 +33,9 @@ if __name__ == '__main__':
         swapcloses=True,
     )
     cerebro.adddata(data)
-    cerebro.addanalyzer(bt.analyzers.TradeAnalyzer)
+    cerebro.addanalyzer(bt.analyzers.SharpeRatio)
 
-
-    cerebro.run(exactbars=False, tradehistory=True, stdstats=True)
+    cerebro.run()
 
     b = Bokeh(style='bar')
     cerebro.plot(b)
