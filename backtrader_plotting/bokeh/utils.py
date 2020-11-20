@@ -2,7 +2,10 @@ from jinja2 import Environment, PackageLoader
 
 import matplotlib.colors
 
+import backtrader as bt
 from backtrader_plotting.utils import nanfilt
+
+from bokeh.models import ColumnDataSource
 
 
 def convert_color(color):
@@ -41,14 +44,15 @@ def convert_linestyle(style: str) -> str:
     return _style_mpl2bokeh[style]
 
 
-def adapt_yranges(y_range, data_min, data_max=None):
-    dmin = min(nanfilt(data_min), default=None)
-    dmax = max(nanfilt(data_max if data_max is not None else data_min), default=None)
+def adapt_yranges(y_range, data, padding_factor=200.0):
+    nnan_data = nanfilt(data)
+    dmin = min(nnan_data, default=None)
+    dmax = max(nnan_data, default=None)
 
     if dmin is None or dmax is None:
         return
 
-    diff = ((dmax - dmin) or dmin) * 0.1
+    diff = ((dmax - dmin) or dmin) * padding_factor
     dmin -= diff
     dmax += diff
 
@@ -82,3 +86,22 @@ def generate_stylesheet(scheme, template="basic.css.j2") -> str:
                            )
                        )
     return css
+
+
+def append_cds(base_cds: ColumnDataSource, new_cds: ColumnDataSource):
+    updates = []
+    for c in new_cds.keys():
+        if c not in base_cds.column_names:
+            continue
+        updates.append((c, new_cds[c]))
+    base_cds.data.update(updates)
+
+
+def get_indicator_data(indicator: bt.Indicator):
+    """The indicator might have been created using a specific line (like SMA(data.lines.close)). In this case
+    a LineSeriesStub has been created for which we have to resolve the original data"""
+    data = indicator.data
+    if isinstance(data, bt.LineSeriesStub):
+        return data._owner
+    else:
+        return data

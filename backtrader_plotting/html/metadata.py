@@ -1,10 +1,12 @@
 import inspect
+import math
 
 import markdown2
 
 import backtrader as bt
 
 from backtrader_plotting.utils import get_params, paramval2str
+from backtrader_plotting.bokeh.label_resolver import indicator2fullid
 
 
 def _get_parameter_table(params) -> str:
@@ -33,28 +35,34 @@ def _get_datas(strategy: bt.Strategy) -> str:
     for data in strategy.datas:
         md += f'## {data.__class__.__name__}\n'
 
-        data = {
+        tabdata = {
             'DataName:': str(data._dataname).replace("|", "\\|"),
             'Timezone:': data._tz,
-            'Time From:': bt.num2date(data.fromdate),
-            'Time To:': bt.num2date(data.todate),
             'Number of bars:': len(data),
             'Bar Length:': f"{data._compression} {bt.TimeFrame.getname(data._timeframe, data._compression)}",
         }
-        md += _get_table(['Property', 'Value'], data)
+
+        # live trading does not have valid data parameters (other datas might also not have)
+        if not math.isinf(data.fromdate):
+            tabdata['Time From:'] = bt.num2date(data.fromdate)
+
+        if not math.isinf(data.todate):
+            tabdata['Time To:'] = bt.num2date(data.todate)
+
+        md += _get_table(['Property', 'Value'], tabdata)
 
     return md
 
 
 def _get_strategy(strategy: bt.Strategy) -> str:
-    md = '\n# Strategy\n'
+    md = f'\n# Strategy: {strategy.__class__.__name__}\n'
 
-    md += f'## {strategy.__class__.__name__}\n'
     md += _get_parameter_table(strategy.params)
 
-    md += '### Indicators:\n\n'
+    md += '## Indicators:\n\n'
     for i in strategy.getindicators():
-        md += f'{i.__class__.__name__}\n\n'
+        md += f'### {i.__class__.__name__} @ {indicator2fullid(i)}\n\n'
+        # md += f'Data: \n'
         md += _get_parameter_table(i.params)
 
     md += 'Source Code:\n'
@@ -64,6 +72,9 @@ def _get_strategy(strategy: bt.Strategy) -> str:
 
 
 def _get_analyzers(strategy: bt.Strategy) -> str:
+    if len(strategy.analyzers) == 0:
+        return ""
+
     md = '\n# Analyzers\n'
 
     for a in strategy.analyzers:

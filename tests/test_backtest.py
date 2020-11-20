@@ -5,8 +5,9 @@ import pytest
 import backtrader_plotting.bokeh.bokeh
 from backtrader_plotting import Bokeh, OptBrowser
 
-from tests.strategies.togglestrategy import ToggleStrategy
-from tests.asserts.asserts import assert_num_tabs, assert_num_figures
+from strategies.togglestrategy import ToggleStrategy
+from asserts.asserts import assert_num_tabs, assert_num_figures
+from testcommon import getdatadir
 
 # set to 'show' for debugging
 _output_mode = 'memory'
@@ -16,7 +17,7 @@ _output_mode = 'memory'
 def cerebro() -> bt.Cerebro:
     cerebro = bt.Cerebro()
 
-    datapath = 'datas/orcl-1995-2014.txt'
+    datapath = getdatadir('orcl-1995-2014.txt')
     data = bt.feeds.YahooFinanceCSVData(
         dataname=datapath,
         fromdate=datetime.datetime(1998, 1, 1),
@@ -37,7 +38,7 @@ def cerebro() -> bt.Cerebro:
 def cerebro_no_optreturn() -> bt.Cerebro:
     cerebro = bt.Cerebro(optreturn=False)
 
-    datapath = 'datas/orcl-1995-2014.txt'
+    datapath = getdatadir('orcl-1995-2014.txt')
     data = bt.feeds.YahooFinanceCSVData(
         dataname=datapath,
         fromdate=datetime.datetime(1998, 1, 1),
@@ -82,7 +83,7 @@ def test_std_backtest(cerebro: bt.Cerebro):
 
 
 def test_std_backtest_2datas(cerebro: bt.Cerebro):
-    datapath = 'datas/nvda-1999-2014.txt'
+    datapath = getdatadir('nvda-1999-2014.txt')
     data = bt.feeds.YahooFinanceCSVData(
         dataname=datapath,
         fromdate=datetime.datetime(1998, 1, 1),
@@ -136,6 +137,24 @@ def test_std_backtest_ind_subplot(cerebro: bt.Cerebro):
     assert_num_figures(figs, 5)
 
 
+def test_std_backtest_ind_on_line(cerebro: bt.Cerebro):
+    """In the past it crashed when creating indicators with specific lines case LineSeriesStub was not handled correctly"""
+    class TestStrategy(bt.Strategy):
+        def __init__(self):
+            self._sma = bt.indicators.SMA(self.data.close)
+
+    cerebro.addstrategy(TestStrategy)
+    cerebro.run()
+
+    s = backtrader_plotting.schemes.Blackly()
+    b = Bokeh(style='bar', scheme=s, output_mode=_output_mode)
+    figs = cerebro.plot(b)
+
+    assert len(figs) == 1
+    assert_num_tabs(figs, 3)
+    assert_num_figures(figs, 3)
+
+
 def test_backtest_2strats(cerebro: bt.Cerebro):
     cerebro.addstrategy(bt.strategies.MA_CrossOver)
     cerebro.addstrategy(ToggleStrategy)
@@ -147,7 +166,7 @@ def test_backtest_2strats(cerebro: bt.Cerebro):
 
     assert len(figs) == 2
     assert_num_tabs(figs, 3, 3)
-    assert_num_figures(figs, 4, 4)
+    assert_num_figures(figs, 4, 3)
 
 
 def test_optimize(cerebro: bt.Cerebro):
@@ -157,7 +176,7 @@ def test_optimize(cerebro: bt.Cerebro):
     b = Bokeh(style='bar', output_mode=_output_mode)
 
     browser = OptBrowser(b, res)
-    model = browser._build_optresult_model()
+    model = browser.build_optresult_model()
     # browser.start()
 
     def count_children(obj):
@@ -183,7 +202,7 @@ def test_optimize_2strat(cerebro: bt.Cerebro):
     browser = OptBrowser(b, res)
 
     with pytest.raises(RuntimeError):
-        browser._build_optresult_model()
+        browser.build_optresult_model()
     # browser.start()
 
 
@@ -195,7 +214,7 @@ def test_optimize_no_optreturn(cerebro_no_optreturn: bt.Cerebro):
     b = Bokeh(style='bar', output_mode=_output_mode, scheme=s)
 
     browser = OptBrowser(b, res)
-    model = browser._build_optresult_model()
+    model = browser.build_optresult_model()
     #browser.start()
 
     def count_children(obj):
@@ -226,7 +245,7 @@ def test_ordered_optimize(cerebro: bt.Cerebro):
     b = Bokeh(style='bar', output_mode=_output_mode)
 
     browser = OptBrowser(b, res, usercolumns=usercolumns, sortcolumn='Profit & Loss')
-    model = browser._build_optresult_model()
+    model = browser.build_optresult_model()
     # browser.start()
 
     def count_children(obj):
